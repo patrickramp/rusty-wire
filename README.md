@@ -7,7 +7,7 @@ Simple Rust application for creating Wireguard configs with QR code support.
 ```bash
 # Build from source
 git clone <repo>
-cd wg-config-gen
+cd rusty-wire
 cargo build --release
 
 # Install globally
@@ -21,13 +21,13 @@ cargo install --path . --features qr
 
 ```bash
 # Initialize WireGuard server
-rusty-wire init --endpoint your.vps.ip.com --port 51820 --network 10.0.0.0/24 --interface eth0
+rusty-wire init --endpoint your.server.ip.com --port 51820 --network 10.0.0.0/24 --interface eth0
 
 # Custom network/port
 rusty-wire init -e example.com -p 51821 -n 192.168.100.0/24 -i enp0s3
 
 # Output to specific directory
-rusty-wire init -e your.vps.ip -o /etc/wireguard
+rusty-wire init -e your.server.ip -o /etc/wireguard
 ```
 
 **Generated files:**
@@ -75,7 +75,7 @@ rusty-wire revoke laptop --verbose
 
 ```
 ./
-├── wg0.conf           # Server config (copy to VPS)
+├── wg0.conf           # Server config (copy to server)
 ├── wg-server.json     # State file (keep safe!)
 ├── homelab.conf       # Client configs
 ├── phone.conf
@@ -84,16 +84,16 @@ rusty-wire revoke laptop --verbose
 
 ## Deployment Workflow
 
-### 1. VPS Setup (One-time)
+### 1. Server Setup (One-time)
 
 ```bash
 # On your local machine
-rusty-wire init --endpoint your.vps.ip
+rusty-wire init --endpoint your.server.ip
 
-# Copy server config to VPS
-scp wg0.conf user@your.vps.ip:/etc/wireguard/
+# Copy server config to server
+scp wg0.conf user@your.server.ip:/etc/wireguard/
 
-# On VPS
+# On server
 sudo systemctl enable wg-quick@wg0
 sudo systemctl start wg-quick@wg0
 
@@ -115,7 +115,7 @@ sudo systemctl enable wg-quick@wg0
 sudo systemctl start wg-quick@wg0
 
 # Verify connection
-ping 10.0.0.1  # Should reach VPS
+ping 10.0.0.1  # Should reach server
 ```
 
 ### 3. Add Mobile Device
@@ -135,14 +135,14 @@ rusty-wire client phone --qr --full-tunnel
 ```bash
 #!/bin/bash
 # setup-vpn.sh
-VPS_IP="your.vps.ip"
+server_IP="your.server.ip"
 
-rusty-wire init --endpoint $VPS_IP
+rusty-wire init --endpoint $SERVER_IP
 rusty-wire client homelab
 rusty-wire client phone --full-tunnel --qr
 
 echo "✓ Configs generated!"
-echo "Copy wg0.conf to VPS: scp wg0.conf user@$VPS_IP:/etc/wireguard/"
+echo "Copy wg0.conf to server: scp wg0.conf user@$SERVER_IP:/etc/wireguard/"
 echo "Copy homelab.conf to homelab: scp homelab.conf user@homelab:/etc/wireguard/wg0.conf"
 ```
 
@@ -161,9 +161,9 @@ done
 # Add new client to existing setup
 rusty-wire client new-device --ip 10.0.0.50
 
-# Copy updated server config to VPS
-scp wg0.conf user@vps:/etc/wireguard/
-ssh user@vps 'sudo systemctl reload wg-quick@wg0'
+# Copy updated server config to server
+scp wg0.conf user@server:/etc/wireguard/
+ssh user@server 'sudo systemctl reload wg-quick@wg0'
 ```
 
 ## Troubleshooting
@@ -198,13 +198,13 @@ rusty-wire client device --ip 10.0.0.custom
 ### Verify Setup
 
 ```bash
-# On VPS
+# On server
 sudo wg show
 sudo ss -tulpn | grep 51820
 
 # Test connectivity from client
-ping 10.0.0.1  # VPS WireGuard IP
-curl ifconfig.me  # Should show VPS IP if full-tunnel
+ping 10.0.0.1  # server WireGuard IP
+curl ifconfig.me  # Should show server IP if full-tunnel
 ```
 
 ## Advanced Usage
@@ -213,8 +213,8 @@ curl ifconfig.me  # Should show VPS IP if full-tunnel
 
 ```bash
 # Different network ranges
-rusty-wire init -e vps.com -n 172.16.0.0/24    # 172.16.0.x
-rusty-wire init -e vps.com -n 192.168.99.0/24  # 192.168.99.x
+rusty-wire init -e server.com -n 172.16.0.0/24    # 172.16.0.x
+rusty-wire init -e server.com -n 192.168.99.0/24  # 192.168.99.x
 ```
 
 ### Multiple Servers
@@ -222,10 +222,10 @@ rusty-wire init -e vps.com -n 192.168.99.0/24  # 192.168.99.x
 ```bash
 # Organize by purpose
 mkdir vpn-home && cd vpn-home
-rusty-wire init -e home.vps.ip -n 10.1.0.0/24
+rusty-wire init -e home.server.ip -n 10.1.0.0/24
 
 mkdir vpn-work && cd vpn-work  
-rusty-wire init -e work.vps.ip -n 10.2.0.0/24 -p 51821
+rusty-wire init -e work.server.ip -n 10.2.0.0/24 -p 51821
 ```
 
 ### Integration with Systemd
