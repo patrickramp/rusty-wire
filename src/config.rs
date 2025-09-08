@@ -103,14 +103,14 @@ impl WireGuardConfig for ServerConfig {
             "[Interface]\n\
              PrivateKey = {}\n\
              Address = {}\n\
-             ListenPort = {}\n\
-             PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o {} -j MASQUERADE\n\
-             PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o {} -j MASQUERADE\n",
+             ListenPort = {}\n\n\
+             PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -j MASQUERADE\n\n\
+             PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -j MASQUERADE\n",
             self.keys.private,
             server_address,
             self.port,
-            self.interface,
-            self.interface
+            //self.interface,
+            //self.interface
         );
         
         for client in &self.clients {
