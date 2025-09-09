@@ -3,6 +3,7 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use std::fs;
 use std::net::IpAddr;
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
 mod cli;
@@ -79,12 +80,25 @@ fn init_server(
     fs::write(&config_path, json)
         .with_context(|| format!("Failed to write server config to {:?}", config_path))?;
 
+    // Set wg-server.json file permissions
+    let mut permissions = fs::metadata(&config_path)?.permissions();
+    if (permissions.mode() & 0o777) != 0o600 {
+        permissions.set_mode(0o600);
+        fs::set_permissions(&config_path, permissions)?;
+    }
+
     // Generate the actual WireGuard config file
     let wg_config = server_config.to_wireguard_config()?;
     let wg_config_path = output_dir.join("wg0.conf");
     fs::write(&wg_config_path, wg_config)
         .with_context(|| format!("Failed to write WireGuard config to {:?}", wg_config_path))?;
 
+    // Set wg0.conf file permissions
+    let mut permissions = fs::metadata(&wg_config_path)?.permissions();
+    if (permissions.mode() & 0o777) != 0o600 {
+        permissions.set_mode(0o600);
+        fs::set_permissions(&wg_config_path, permissions)?;
+    }
     if verbose {
         println!("Server initialized:");
         println!("  Endpoint: {}:{}", endpoint, port);
@@ -157,6 +171,12 @@ fn add_client(
     let client_config_path = output_dir.join(format!("{}.conf", name));
     fs::write(&client_config_path, &client_wg_config)?;
 
+    // Set client.conf file permissions
+    let mut permissions = fs::metadata(&client_wg_config)?.permissions();
+    if (permissions.mode() & 0o777) != 0o600 {
+        permissions.set_mode(0o600);
+        fs::set_permissions(&client_wg_config, permissions)?;
+    }
     if verbose {
         println!("Client '{}' added:", name);
         println!("  IP: {}", client_ip);

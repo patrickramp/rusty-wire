@@ -100,12 +100,20 @@ impl WireGuardConfig for ServerConfig {
         let server_address = self.server_ip_with_cidr()?;
         
         let mut config = format!(
-            "[Interface]\n\
-             PrivateKey = {}\n\
-             Address = {}\n\
-             ListenPort = {}\n\n\
-             PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -j MASQUERADE\n\n\
-             PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -j MASQUERADE\n",
+r#"[Interface]
+PrivateKey = {}
+Address = {}
+ListenPort = {}
+
+PostUp = sysctl -w net.ipv4.ip_forward=1
+PostUp = iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostUp = iptables -A FORWARD -i %i -j ACCEPT
+PostUp = iptables -A FORWARD -o %i -j ACCEPT
+
+PostDown = iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT
+PostDown = iptables -D FORWARD -o %i -j ACCEPT
+"#,
             self.keys.private,
             server_address,
             self.port,
